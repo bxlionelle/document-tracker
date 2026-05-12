@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: doctracker_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: doctracker
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_PASSWORD: secret
+      MYSQL_USER: docuser
+    ports:
+    - "3307:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - doctracker
+
+  # Laravel Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: doctracker_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: doctracker
+      DB_USERNAME: docuser
+      DB_PASSWORD: secret
+    networks:
+      - doctracker
+
+  # ReactJS Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: doctracker_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - doctracker
+
+networks:
+  doctracker:
+    driver: bridge
+
+volumes:
+  dbdata:
